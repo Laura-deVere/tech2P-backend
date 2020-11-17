@@ -10,6 +10,7 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 const User = require("./user");
+const Expertise = require('./expertise');
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -47,13 +48,32 @@ app.use(passport.initialize());
 app.use(passport.session());
 require("./passportConfig")(passport);
 
+app.use((error, req, res, next) => {
+  return res.status(500).json({ error: error.toString() });
+});
 
 // Routes********
+app.get('/logout', (req, res) => {
+    req.logout();
+    res.send('Logged out successfully');
+});
+
+// User
 app.post('/login', (req, res, next) => {
      
     passport.authenticate('local', async (err, user, info) => {   
-        if(err) throw err;
-        if(!user) res.send('User does not exist.');
+        if(err) {
+            console.log('err',err)
+            // throw err;
+            res.status(400).json({ error: err.toString() });
+            res.send({ error: err.toString() })
+        }
+        if(!user) {
+            const message = 'Wrong username or password'
+            // res.status(400)
+            // return res.send({ error: message });
+            return res.status(401).send(message);
+        }
         else {
             req.logIn(user, (err) => {
                 if (err) throw err;
@@ -118,6 +138,52 @@ app.get('/user', (req, res) => {
     // const user = await User.findOne({email: newUser.email}).select("-password");
     res.send(req.user);
 })
+// User
+
+// Expertise
+app.put('/expertise', (req, res) => {
+    Expertise.updateOne({
+        id: req.id
+    },
+    { $addToSet: { users: req.user_id }},
+    async (err, doc) => {
+        if(err) throw err;
+        if(doc) {
+            res.send('Name does not exist');
+        } else {
+            res.send(doc);
+        }
+    }
+    )
+});
+
+app.get('/expertise', (req, res) => {
+    Expertise.find({}, 'name', (err, expertise) => {
+        if(err) throw err;
+        if(!expertise) {
+            res.send('Doc does not exist');
+        } else {
+            res.send(expertise);
+        }
+    })
+})
+
+app.post('/expertise', (req, res) => {
+    Expertise.findOne({ name: req.body.name }, async (err, doc) => {
+        if(err) throw err;
+        if(doc) res.send('Name already exists.');
+        if(!doc) {
+            const newExpertise = new Expertise({
+                name: req.body.name,
+                users: []
+            });
+
+            await newExpertise.save();
+            res.send({message: 'Creation Successful'});
+        }
+    });
+});
+// Expertise
 
 app.listen(4040, () => {
     console.log('Server has started.')
