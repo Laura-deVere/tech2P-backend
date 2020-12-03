@@ -7,7 +7,8 @@ const user = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        select: false
     },
     firstName: {
         type: String,
@@ -28,7 +29,12 @@ const user = new mongoose.Schema({
         required: true
     },
     expertise:  {
-        type: [ String ],
+        type: [ 
+            {
+                _id: String,
+                name: String
+            }
+         ],
         required: true
     }
 });

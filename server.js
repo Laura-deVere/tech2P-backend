@@ -12,6 +12,7 @@ const app = express();
 const User = require("./user");
 const Expertise = require('./expertise');
 const dotenv = require("dotenv");
+const { reset } = require("nodemon");
 dotenv.config();
 
 const mongouser = process.env.USERNAME;
@@ -53,12 +54,12 @@ app.use((error, req, res, next) => {
 });
 
 // Routes********
+// User
 app.get('/logout', (req, res) => {
     req.logout();
     res.send('Logged out successfully');
 });
 
-// User
 app.post('/login', (req, res, next) => {
      
     passport.authenticate('local', async (err, user, info) => {   
@@ -70,8 +71,6 @@ app.post('/login', (req, res, next) => {
         }
         if(!user) {
             const message = 'Wrong username or password'
-            // res.status(400)
-            // return res.send({ error: message });
             return res.status(401).send(message);
         }
         else {
@@ -82,6 +81,7 @@ app.post('/login', (req, res, next) => {
                 const payload = {
                     user: {
                         id: req.user.id,
+                        email: req.user.email,
                         firstName: req.user.firstName,
                         lastName: req.user.lastName,
                         website: req.user.website,
@@ -129,34 +129,41 @@ app.post('/signup', (req, res) => {
             });
 
             await newUser.save();
-            res.send({message: 'Signed up successfully'});
+            res.send({ message: 'Signed up successfully' });
         }
     });
 });
 
+app.get('/user/matches', (req, res) => {
+    console.log(req.query.expertise)
+    // User.find({ 'expertise.name' : { "$all": { $elemMatch: { $in: req.query.expertise }} } }).limit(10).
+    User.find({ 'expertise.name' : { $in: req.query.expertise }, 'email': { $ne: req.query.email } }).limit(10).
+    exec(async (err, data) => {
+        if(err) reset.send("Couldn't find any matches");
+        res.send(data)
+    });
+});
+
 app.get('/user', (req, res) => {
-    // const user = await User.findOne({email: newUser.email}).select("-password");
     res.send(req.user);
-})
+});
+
+app.get('/users/latest', (req,res) => {
+    User.find({}).sort({ '_id' : -1 }).limit(4).exec(async (err, data) => {
+        if(err) {
+            console.log(err);
+            res.status(400).json({ error: 'Something went wrong.' });
+        }
+        if(!data) {
+            res.status(400).json({ error: 'No users exist.' });
+        } else {
+            res.send(data);
+        }
+    });
+});
 // User
 
 // Expertise
-app.put('/expertise', (req, res) => {
-    Expertise.updateOne({
-        id: req.id
-    },
-    { $addToSet: { users: req.user_id }},
-    async (err, doc) => {
-        if(err) throw err;
-        if(doc) {
-            res.send('Name does not exist');
-        } else {
-            res.send(doc);
-        }
-    }
-    )
-});
-
 app.get('/expertise', (req, res) => {
     Expertise.find({}, 'name', (err, expertise) => {
         if(err) throw err;

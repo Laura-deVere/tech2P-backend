@@ -16,7 +16,7 @@ module.exports = function (passport) {
                         return done(null, false);
                     }
                 });
-            });
+            }).select('+password');
         })
     );
 
@@ -32,3 +32,24 @@ module.exports = function (passport) {
         });
     });
 };
+
+// const config = {
+//     port: process.env.PORT || 3000,    
+//     db: 'mongodb://localhost:27017/mydb',
+//     mailerConfig: {
+//         mailerService: 'gmail',
+//         mailerUsername: secrets.mailerUsername,
+//         mailerPassword: secrets.mailerPassword,
+//     },
+//     sessionConfig: {
+//         name: 'blogSecurity',
+//         resave: true,
+//         saveUninitialized: true,
+//         rolling: true,
+//         cookie: {
+//             httpOnly: false,
+//             secure: false,
+//             maxAge: 48 * 60 * 60 * 1000,
+//         },
+//     },
+// };
