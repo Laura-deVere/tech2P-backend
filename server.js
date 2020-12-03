@@ -23,6 +23,7 @@ mongoose.connect(
     {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        useFindAndModify: false
     },
     () => {
         console.log("Mongoose Is Connected");
@@ -80,13 +81,13 @@ app.post('/login', (req, res, next) => {
                 // res.send(req.user);
                 const payload = {
                     user: {
-                        id: req.user.id,
+                        _id: req.user.id,
                         email: req.user.email,
                         firstName: req.user.firstName,
                         lastName: req.user.lastName,
                         website: req.user.website,
                         location: req.user.location,
-                        linkedIn: req.user.linkedIn,
+                        linkedin: req.user.linkedin,
                         summary: req.user.summary,
                         expertise: req.user.expertise
                     }
@@ -111,10 +112,10 @@ app.post('/login', (req, res, next) => {
 });
 
 app.post('/signup', (req, res) => {
-    User.findOne({ email: req.body.email }, async (err, doc) => {
+    User.findOne({ email: req.body.email }, async (err, user) => {
         if(err) throw err;
-        if(doc) res.send('User already exits. Try another email');
-        if(!doc) {
+        if(user) res.send('User already exits. Try another email');
+        if(!user) {
             const hashedPassword = await bcrypt.hash(req.body.password, 10);
             const newUser = new User({
                 email: req.body.email,
@@ -123,7 +124,7 @@ app.post('/signup', (req, res) => {
                 lastName: req.body.lastName,
                 website: req.body.website,
                 location: req.body.location,
-                linkedIn: req.body.linkedIn,
+                linkedin: req.body.linkedin,
                 summary: req.body.summary,
                 expertise: req.body.expertise
             });
@@ -134,8 +135,25 @@ app.post('/signup', (req, res) => {
     });
 });
 
+app.put('/user/update', (req, res) => {
+    User.findByIdAndUpdate({ _id: req.body.id }, req.body, async (err, user) => {
+        if(err) {
+            console.log(err);
+            res.status(400).json({ error: 'Something went wrong.' });
+        }
+        if(!user) {
+            res.status(400).json({ error: 'No users exist.' });
+        } else {
+            res.send(user);
+        }
+    });
+});
+
+app.get('/user', (req, res) => {
+    res.send(req.user);
+});
+
 app.get('/user/matches', (req, res) => {
-    console.log(req.query.expertise)
     // User.find({ 'expertise.name' : { "$all": { $elemMatch: { $in: req.query.expertise }} } }).limit(10).
     User.find({ 'expertise.name' : { $in: req.query.expertise }, 'email': { $ne: req.query.email } }).limit(10).
     exec(async (err, data) => {
@@ -144,9 +162,6 @@ app.get('/user/matches', (req, res) => {
     });
 });
 
-app.get('/user', (req, res) => {
-    res.send(req.user);
-});
 
 app.get('/users/latest', (req,res) => {
     User.find({}).sort({ '_id' : -1 }).limit(4).exec(async (err, data) => {

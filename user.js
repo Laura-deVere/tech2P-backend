@@ -23,7 +23,7 @@ const user = new mongoose.Schema({
         required: false
     },
     website: String,
-    linkedIn: String,
+    linkedin: String,
     summary:  {
         type: String,
         required: true
